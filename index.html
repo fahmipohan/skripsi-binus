@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventaris Laptop PLNE</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script defer src="./assets/lucide.min.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigasi utama">
+      <div class="brand">
+        <span class="brand-mark">IE</span>
+        <div>
+          <strong>Inventaris Enjiniring</strong>
+          <span>PT PLN Enjiniring</span>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="dashboard"><i
+            data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-view="inventory"><i data-lucide="laptop"></i><span>Inventaris</span></button>
+        <button class="nav-item" data-view="scan"><i data-lucide="scan-barcode"></i><span>Scan Barcode</span></button>
+        <button class="nav-item" data-view="procurement"><i
+            data-lucide="clipboard-list"></i><span>Pengadaan</span></button>
+        <button class="nav-item" data-view="reports"><i data-lucide="file-spreadsheet"></i><span>Laporan</span></button>
+      </nav>
+
+      <div class="side-panel">
+        <span class="label">Peran aktif</span>
+        <select id="roleSelect" aria-label="Pilih peran">
+          <option>IT</option>
+          <option>Pengadaan</option>
+          <option>Admin</option>
+        </select>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sistem informasi inventaris laptop</p>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <label class="search-box">
+            <i data-lucide="search"></i>
+            <input id="globalSearch" type="search" placeholder="Cari serial, user, bidang, comp name" />
+          </label>
+          <button class="btn primary" id="addDeviceBtn"><i data-lucide="plus"></i><span>Tambah</span></button>
+        </div>
+      </header>
+
+      <section class="hero-strip">
+        <img src="./assets/it-staging-workbench.png" alt="Meja kerja IT untuk staging laptop dan pemindaian barcode" />
+        <div class="hero-content">
+          <span class="status-pill">Prototype skripsi</span>
+          <h2>Staging, instalasi, dan distribusi laptop dalam satu sistem.</h2>
+          <p>Alur dibuat untuk mencatat laptop masuk, pemeriksaan IT, rename komputer, instalasi aplikasi keamanan,
+            pemindaian barcode, dan monitoring oleh pengadaan.</p>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="view active-view">
+        <div class="metric-grid" id="metricGrid"></div>
+        <div class="split-layout">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Progress Workflow</h3>
+                <p>Status perangkat dari diterima sampai aktif.</p>
+              </div>
+            </div>
+            <div class="stage-board" id="stageBoard"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Kesiapan Keamanan</h3>
+                <p>Checklist aplikasi dan konfigurasi wajib IT.</p>
+              </div>
+            </div>
+            <div id="securityList" class="security-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="inventoryView" class="view">
+        <div class="toolbar">
+          <div class="segmented" role="tablist" aria-label="Filter status">
+            <button class="segment active" data-filter="all">Semua</button>
+            <button class="segment" data-filter="Staging IT">Staging IT</button>
+            <button class="segment" data-filter="Siap Distribusi">Siap</button>
+            <button class="segment" data-filter="Terdistribusi">Terdistribusi</button>
+            <button class="segment" data-filter="Maintenance">Maintenance</button>
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn" id="exportCsvBtn"><i data-lucide="download"></i><span>CSV</span></button>
+            <button class="btn" id="exportJsonBtn"><i data-lucide="database"></i><span>JSON</span></button>
+            <label class="btn file-btn">
+              <i data-lucide="upload"></i><span>Impor</span>
+              <input id="importFile" type="file" accept=".json,.csv,text/csv,application/json" />
+            </label>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Serial</th>
+                <th>Perangkat</th>
+                <th>User</th>
+                <th>Computer Name</th>
+                <th>Status</th>
+                <th>Keamanan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="deviceTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="scanView" class="view">
+        <div class="scan-layout">
+          <section class="panel scan-panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Input Barcode</h3>
+                <p>Gunakan barcode scanner USB lalu tekan Enter, atau aktifkan kamera jika browser mendukung.</p>
+              </div>
+            </div>
+            <label class="scan-input-label" for="scanInput">Hasil scan serial number</label>
+            <div class="scan-input-row">
+              <input id="scanInput" class="scan-input" autocomplete="off" placeholder="Contoh: PF45QP1G" />
+              <button class="btn primary" id="scanApplyBtn"><i
+                  data-lucide="corner-down-left"></i><span>Proses</span></button>
+            </div>
+            <div class="camera-actions">
+              <button class="btn" id="cameraStartBtn"><i data-lucide="camera"></i><span>Kamera</span></button>
+              <button class="btn danger" id="cameraStopBtn"><i data-lucide="camera-off"></i><span>Stop</span></button>
+            </div>
+            <video id="cameraPreview" playsinline muted></video>
+            <p id="scanFeedback" class="feedback"></p>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Hasil Otomatis</h3>
+                <p>Jika serial sudah ada di master data, formulir akan terisi otomatis.</p>
+              </div>
+            </div>
+            <div id="scanResult" class="scan-result empty-state">Belum ada scan.</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="procurementView" class="view">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Monitoring Pengadaan</h3>
+              <p>Ringkasan barang masuk, siap serah, dan sudah aktif berdasarkan batch/kepemilikan.</p>
+            </div>
+          </div>
+          <div id="procurementSummary" class="batch-grid"></div>
+        </div>
+      </section>
+
+      <section id="reportsView" class="view">
+        <div class="report-grid">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Struktur Database</h3>
+                <p>Disusun dari kolom PDF database perangkat yang kamu lampirkan.</p>
+              </div>
+            </div>
+            <div id="schemaList" class="schema-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Catatan Implementasi</h3>
+                <p>Bagian ini bisa kamu pakai sebagai dasar Bab 4.</p>
+              </div>
+            </div>
+            <ul class="notes">
+              <li>Perangkat baru masuk sebagai status "Diterima" atau "Staging IT".</li>
+              <li>Tim IT melengkapi rename komputer, IP/MAC, antivirus, DLP, UEM, EDR/XDR, patch Windows, dan MS 365.
+              </li>
+              <li>Pengadaan dapat memantau status tanpa menunggu rekap Excel manual.</li>
+              <li>Barcode scanner USB bekerja seperti keyboard: arahkan kursor ke input scan lalu pindai kotak laptop.
+              </li>
+              <li>Data lokal dapat diekspor ke CSV/JSON sebagai jembatan menuju database MySQL/PostgreSQL.</li>
+            </ul>
+            <div class="report-actions">
+              <button class="btn danger" id="resetDataBtn"><i data-lucide="rotate-ccw"></i><span>Reset Data
+                  Demo</span></button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="deviceDialog">
+    <form method="dialog" id="deviceForm" class="modal-form">
+      <div class="modal-heading">
+        <div>
+          <span class="label">Data perangkat</span>
+          <h2 id="dialogTitle">Tambah Laptop</h2>
+        </div>
+        <button type="button" class="icon-btn" id="closeDialogBtn" aria-label="Tutup"><i data-lucide="x"></i></button>
+      </div>
+
+      <input type="hidden" id="recordId" />
+      <div class="form-grid">
+        <label>Serial Number<input id="serialNumber" required /></label>
+        <label>Kepemilikan<input id="ownership" placeholder="KHS GSP Tahap 3" /></label>
+        <label>Tanggal Diterima<input id="receivedDate" type="date" /></label>
+        <label>Jenis Perangkat
+          <select id="deviceType">
+            <option>Laptop Basic</option>
+            <option>Laptop Medium</option>
+            <option>Laptop High</option>
+            <option>Laptop Custom</option>
+          </select>
+        </label>
+        <label>Merk - Seri<input id="brandSeries" /></label>
+        <label>Processor<input id="processor" /></label>
+        <label>RAM<input id="ram" /></label>
+        <label>Storage<input id="storage" /></label>
+        <label>VGA<input id="vga" /></label>
+        <label>Kondisi
+          <select id="condition">
+            <option>Normal</option>
+            <option>Gangguan</option>
+            <option>Rusak</option>
+          </select>
+        </label>
+        <label>Charge Code<input id="chargeCode" /></label>
+        <label>NIP<input id="nip" /></label>
+        <label>Nama User<input id="userName" /></label>
+        <label>Email<input id="email" type="email" /></label>
+        <label>No HP<input id="phone" /></label>
+        <label>Bidang<input id="division" /></label>
+        <label>Computer Name<input id="computerName" /></label>
+        <label>Status Comp
+          <select id="computerStatus">
+            <option>OK</option>
+            <option>Pending</option>
+            <option>Perlu Cek</option>
+          </select>
+        </label>
+        <label>IP Address<input id="ipAddress" /></label>
+        <label>Mac Address 1<input id="macAddress1" /></label>
+        <label>Mac Address 2<input id="macAddress2" /></label>
+        <label>BA Terima<input id="baReceive" /></label>
+        <label>BA Kembali<input id="baReturn" /></label>
+        <label>Status Saat Ini
+          <select id="currentStatus">
+            <option>Diterima</option>
+            <option>Staging IT</option>
+            <option>Siap Distribusi</option>
+            <option>Terdistribusi</option>
+            <option>Maintenance</option>
+            <option>Nonaktif</option>
+          </select>
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Checklist instalasi dan keamanan</legend>
+        <label class="check"><input id="renamed" type="checkbox" /> Rename komputer</label>
+        <label class="check"><input id="antiVirus" type="checkbox" /> Anti virus</label>
+        <label class="check"><input id="screenSaver" type="checkbox" /> Screen saver 5 menit</label>
+        <label class="check"><input id="dlp" type="checkbox" /> DLP</label>
+        <label class="check"><input id="uem" type="checkbox" /> UEM</label>
+        <label class="check"><input id="edr" type="checkbox" /> EDR/XDR</label>
+        <label class="check"><input id="patchWindows" type="checkbox" /> Patch Windows</label>
+        <label class="check"><input id="ms365" type="checkbox" /> MS 365</label>
+      </fieldset>
+
+      <label>Catatan IT<textarea id="notes" rows="3"
+          placeholder="Catatan instalasi, kendala, atau kelengkapan."></textarea></label>
+
+      <div class="modal-actions">
+        <button type="button" class="btn danger" id="deleteDeviceBtn"><i
+            data-lucide="trash-2"></i><span>Hapus</span></button>
+        <span class="modal-spacer"></span>
+        <button type="button" class="btn" id="cancelDialogBtn">Batal</button>
+        <button class="btn primary" id="saveDeviceBtn" value="default"><i
+            data-lucide="save"></i><span>Simpan</span></button>
+      </div>
+    </form>
+  </dialog>
+</body>
+
+</html>
