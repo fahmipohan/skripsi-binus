@@ -57,16 +57,15 @@ button {
   gap: 12px;
 }
 
-.brand-mark {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, #00a39a, #f5c744);
-  color: #0b1c17;
-  font-weight: 800;
-  letter-spacing: 0;
+.brand-logo {
+  width: 118px;
+  max-width: 46%;
+  height: auto;
+  flex: 0 0 auto;
+  display: block;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 4px;
 }
 
 .brand strong {
@@ -311,7 +310,7 @@ h3 {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -535,6 +534,49 @@ td small {
   gap: 14px;
 }
 
+.report-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.report-card {
+  min-height: 126px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgba(21, 32, 28, 0.05);
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+}
+
+.report-card span,
+.report-card small {
+  color: var(--muted);
+}
+
+.report-card span {
+  font-size: 0.84rem;
+}
+
+.report-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 2.15rem;
+  line-height: 1;
+}
+
+.report-card small {
+  font-size: 0.78rem;
+}
+
+.distributed-card {
+  border-left: 5px solid var(--teal);
+}
+
 .scan-input-label {
   display: block;
   color: var(--muted);
@@ -594,6 +636,10 @@ td small {
   gap: 10px;
 }
 
+.schema-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .batch-card,
 .schema-item {
   border: 1px solid var(--line);
@@ -609,15 +655,51 @@ td small {
   gap: 10px;
 }
 
+.schema-item {
+  align-items: center;
+  min-width: 0;
+}
+
+.schema-item span,
+.schema-item code {
+  overflow-wrap: anywhere;
+}
+
+.schema-item code {
+  color: var(--teal-dark);
+  background: #e9f4f1;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 0.78rem;
+}
+
 .notes {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 0;
   color: var(--muted);
   line-height: 1.7;
+  list-style: none;
+}
+
+.notes li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.notes li::before {
+  content: "";
+  position: absolute;
+  top: 0.72em;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--teal);
 }
 
 .report-actions {
-  margin-top: 16px;
+  padding-top: 6px;
 }
 
 dialog {
@@ -718,6 +800,7 @@ legend {
 @media (max-width: 1180px) {
 
   .metric-grid,
+  .report-summary,
   .split-layout,
   .scan-layout,
   .report-grid {
@@ -742,6 +825,11 @@ legend {
   .sidebar {
     position: static;
     padding: 14px;
+  }
+
+  .brand-logo {
+    width: 104px;
+    max-width: 38%;
   }
 
   .nav-list {
@@ -782,9 +870,11 @@ legend {
   }
 
   .metric-grid,
+  .report-summary,
   .split-layout,
   .scan-layout,
   .report-grid,
+  .schema-list,
   .stage-board,
   .form-grid,
   fieldset {

@@ -6,15 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventaris Laptop PLNE</title>
   <link rel="stylesheet" href="./styles.css" />
-  <script defer src="./assets/lucide.min.js"></script>
-  <script defer src="./app.js"></script>
+  <script defer src="./assets/lucide.min.js?v=20260725"></script>
+  <script defer src="./assets/zxing-browser.min.js?v=20260725"></script>
+  <script defer src="./app.js?v=20260725"></script>
 </head>
 
 <body>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Navigasi utama">
       <div class="brand">
-        <span class="brand-mark">IE</span>
+        <img class="brand-logo" src="./assets/plne-logo2.png" alt="Logo PT PLN Enjiniring" />
         <div>
           <strong>Inventaris Enjiniring</strong>
           <span>PT PLN Enjiniring</span>
@@ -132,7 +133,7 @@
             <div class="panel-heading">
               <div>
                 <h3>Input Barcode</h3>
-                <p>Gunakan barcode scanner USB lalu tekan Enter, atau aktifkan kamera jika browser mendukung.</p>
+                <p>Gunakan barcode scanner USB lalu tekan Enter, atau aktifkan kamera untuk membaca barcode.</p>
               </div>
             </div>
             <label class="scan-input-label" for="scanInput">Hasil scan serial number</label>
@@ -173,6 +174,7 @@
       </section>
 
       <section id="reportsView" class="view">
+        <div class="report-summary" id="reportSummary"></div>
         <div class="report-grid">
           <section class="panel">
             <div class="panel-heading">
@@ -186,7 +188,7 @@
           <section class="panel">
             <div class="panel-heading">
               <div>
-                <h3>Catatan Implementasi</h3>
+                <h3>Catatan Laporan</h3>
                 <p>Bagian ini bisa kamu pakai sebagai dasar Bab 4.</p>
               </div>
             </div>

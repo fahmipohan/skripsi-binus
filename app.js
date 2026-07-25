@@ -233,6 +233,7 @@ let currentView = "dashboard";
 let currentFilter = "all";
 let cameraStream = null;
 let scanTimer = null;
+let zxingReader = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -294,11 +295,13 @@ function renderAll() {
 function renderDashboard() {
   const total = devices.length;
   const ready = devices.filter((d) => d.currentStatus === "Siap Distribusi").length;
+  const distributed = devices.filter((d) => d.currentStatus === "Terdistribusi").length;
   const staging = devices.filter((d) => d.currentStatus === "Staging IT").length;
   const incomplete = devices.filter((d) => readyScore(d) < 100).length;
   const metrics = [
     ["Total perangkat", total],
     ["Siap distribusi", ready],
+    ["Terdistribusi ke pegawai", distributed],
     ["Dalam staging IT", staging],
     ["Checklist belum lengkap", incomplete],
   ];
@@ -359,6 +362,16 @@ function renderProcurement() {
 }
 
 function renderReports() {
+  const total = devices.length;
+  const distributed = devices.filter((device) => device.currentStatus === "Terdistribusi").length;
+
+  $("reportSummary").innerHTML = `<article class="report-card distributed-card">
+    <div>
+      <span>Total laptop yang sudah didistribusikan</span>
+      <strong>${distributed}</strong>
+    </div>
+    <small>${distributed} dari ${total} laptop berstatus Terdistribusi.</small>
+  </article>`;
   $("schemaList").innerHTML = schemaFields.map(([field, label]) => `<div class="schema-item"><span>${label}</span><code>${field}</code></div>`).join("");
 }
 
@@ -505,33 +518,53 @@ function parseBarcodePayload(raw) {
 }
 
 async function startCamera() {
-  if (!("BarcodeDetector" in window)) {
-    $("scanFeedback").textContent = "Browser ini belum mendukung BarcodeDetector. Gunakan scanner USB atau input manual.";
-    return;
-  }
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      $("scanFeedback").textContent = "Browser belum memberi akses kamera. Gunakan scanner USB atau input manual.";
+      return;
+    }
+
     const video = $("cameraPreview");
-    video.srcObject = cameraStream;
     video.style.display = "block";
-    await video.play();
-    const detector = new BarcodeDetector({ formats: ["code_128", "code_39", "ean_13", "qr_code"] });
-    scanTimer = window.setInterval(async () => {
-      const codes = await detector.detect(video);
-      if (codes.length) {
-        processScan(codes[0].rawValue);
-        stopCamera();
-      }
-    }, 700);
-    $("scanFeedback").textContent = "Kamera aktif. Arahkan ke barcode kotak laptop.";
+
+    if ("BarcodeDetector" in window) {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      video.srcObject = cameraStream;
+      await video.play();
+      const detector = new BarcodeDetector({ formats: ["code_128", "code_39", "ean_13", "qr_code"] });
+      scanTimer = window.setInterval(async () => {
+        const codes = await detector.detect(video);
+        if (codes.length) {
+          processScan(codes[0].rawValue);
+          stopCamera();
+        }
+      }, 700);
+      $("scanFeedback").textContent = "Kamera aktif. Arahkan ke barcode kotak laptop.";
+      return;
+    }
+
+    if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
+      zxingReader = new window.ZXing.BrowserMultiFormatReader();
+      $("scanFeedback").textContent = "Kamera aktif dengan scanner fallback. Arahkan ke barcode kotak laptop.";
+      const result = await zxingReader.decodeOnceFromVideoDevice(undefined, video);
+      processScan(result.getText());
+      stopCamera();
+      return;
+    }
+
+    video.style.display = "none";
+    $("scanFeedback").textContent = "Scanner kamera belum tersedia. Gunakan scanner USB atau input manual.";
   } catch (error) {
     $("scanFeedback").textContent = `Kamera tidak bisa dibuka: ${error.message}`;
+    stopCamera();
   }
 }
 
 function stopCamera() {
   if (scanTimer) window.clearInterval(scanTimer);
   scanTimer = null;
+  if (zxingReader) zxingReader.reset();
+  zxingReader = null;
   if (cameraStream) cameraStream.getTracks().forEach((track) => track.stop());
   cameraStream = null;
   const video = $("cameraPreview");
