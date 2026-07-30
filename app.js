@@ -415,7 +415,38 @@ function collectFormData() {
   return data;
 }
 
-function saveForm() {
+async function persistDeviceToDatabase(device) {
+  if (window.location.protocol === "file:") {
+    throw new Error("Aplikasi dibuka langsung dari file. Jalankan jalankan-aplikasi.bat agar server database aktif.");
+  }
+  const response = await fetch("/api/devices", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(device),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) {
+    throw new Error(result.error || "Gagal menyimpan ke database.");
+  }
+  return result;
+}
+
+function showToast(message, type = "success") {
+  let toast = document.querySelector(".toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    document.body.appendChild(toast);
+  }
+  toast.className = `toast ${type} show`;
+  toast.innerHTML = `<strong>${escapeHtml(type === "success" ? "Berhasil" : "Perlu dicek")}</strong><span>${escapeHtml(message)}</span>`;
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 3400);
+}
+
+async function saveForm() {
   const id = $("recordId").value;
   const data = collectFormData();
   if (!data.serialNumber) {
@@ -427,14 +458,30 @@ function saveForm() {
     alert("Serial number sudah ada di database.");
     return;
   }
+  const saveButton = $("saveDeviceBtn");
+  saveButton.disabled = true;
+  saveButton.classList.add("is-loading");
   if (id) {
     devices = devices.map((d) => d.id === id ? { ...d, ...data } : d);
   } else {
-    devices.unshift({ id: crypto.randomUUID(), ...data });
+    data.id = crypto.randomUUID();
+    devices.unshift(data);
   }
   saveDevices();
   $("deviceDialog").close();
   renderAll();
+  try {
+    await persistDeviceToDatabase(data);
+    showToast(`Data ${data.serialNumber} berhasil disimpan ke database PostgreSQL.`);
+  } catch (error) {
+    const message = error instanceof TypeError && error.message === "Failed to fetch"
+      ? "server database lokal belum aktif. Tutup tab lama, jalankan ulang jalankan-aplikasi.bat, lalu buka http://127.0.0.1:5177/."
+      : error.message;
+    showToast(`Data tampil di Inventaris, tetapi belum masuk PostgreSQL: ${message}`, "error");
+  } finally {
+    saveButton.disabled = false;
+    saveButton.classList.remove("is-loading");
+  }
 }
 
 function deleteCurrentDevice() {
@@ -453,6 +500,13 @@ function processScan(value) {
   if (!raw) return;
   const payload = parseBarcodePayload(raw);
   const serial = payload.serialNumber || raw;
+  const validation = validateSerialNumber(serial);
+  if (!validation.ok) {
+    $("scanFeedback").textContent = validation.message;
+    $("scanResult").classList.add("empty-state");
+    $("scanResult").innerHTML = `Hasil scan "${escapeHtml(serial)}" belum diproses karena tidak terlihat seperti serial number laptop.`;
+    return;
+  }
   const existing = devices.find((d) => d.serialNumber.toLowerCase() === serial.toLowerCase());
   let device = existing;
 
@@ -510,11 +564,37 @@ function processScan(value) {
 function parseBarcodePayload(raw) {
   try {
     const data = JSON.parse(raw);
-    if (data && typeof data === "object") return data;
+    if (data && typeof data === "object") {
+      return {
+        ...data,
+        serialNumber: data.serialNumber || data.serial || data.sn || data.SN || data["S/N"] || raw,
+      };
+    }
   } catch {
-    return { serialNumber: raw };
+    const labelledSerial = raw.match(/(?:S\/N|SN|SERIAL(?:\s*NUMBER)?)\s*[:#-]?\s*([A-Z0-9-]{6,20})/i);
+    return { serialNumber: labelledSerial ? labelledSerial[1] : raw };
   }
   return { serialNumber: raw };
+}
+
+function validateSerialNumber(serial) {
+  const normalized = serial.trim().toUpperCase();
+  const hasLetter = /[A-Z]/.test(normalized);
+  const hasNumber = /\d/.test(normalized);
+  const validShape = /^[A-Z0-9-]{6,20}$/.test(normalized);
+  if (/^\d+$/.test(normalized)) {
+    return {
+      ok: false,
+      message: `Hasil scan ${normalized} terlihat seperti kode numerik box/produk, bukan serial number. Arahkan kamera ke barcode tepat di samping label S/N.`,
+    };
+  }
+  if (!validShape || !hasLetter || !hasNumber) {
+    return {
+      ok: false,
+      message: `Hasil scan ${normalized} belum sesuai format serial laptop. Gunakan barcode S/N, misalnya format seperti 5CD344F03S.`,
+    };
+  }
+  return { ok: true };
 }
 
 async function startCamera() {
@@ -698,9 +778,9 @@ function bindEvents() {
   $("addDeviceBtn").addEventListener("click", () => openDeviceDialog());
   $("closeDialogBtn").addEventListener("click", () => $("deviceDialog").close());
   $("cancelDialogBtn").addEventListener("click", () => $("deviceDialog").close());
-  $("saveDeviceBtn").addEventListener("click", (event) => {
+  $("saveDeviceBtn").addEventListener("click", async (event) => {
     event.preventDefault();
-    saveForm();
+    await saveForm();
   });
   $("deleteDeviceBtn").addEventListener("click", deleteCurrentDevice);
 

@@ -10,15 +10,17 @@ echo.
 
 where python >nul 2>nul
 if %errorlevel%==0 (
+  start "Inventaris Laptop PLNE - Server" cmd /k "cd /d ""%cd%"" && python local-app-server.py"
+  timeout /t 2 /nobreak >nul
   start "" "%URL%"
-  python -m http.server %PORT% --bind 127.0.0.1
   goto :done
 )
 
 where py >nul 2>nul
 if %errorlevel%==0 (
+  start "Inventaris Laptop PLNE - Server" cmd /k "cd /d ""%cd%"" && py local-app-server.py"
+  timeout /t 2 /nobreak >nul
   start "" "%URL%"
-  py -m http.server %PORT% --bind 127.0.0.1
   goto :done
 )
 
